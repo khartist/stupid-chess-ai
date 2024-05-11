@@ -1,9 +1,14 @@
 import operator
 from itertools import product
+from config import initial
+from positional_values import *
+# other_file.py
+with open('initial.txt', 'r') as f:
+    mode = int(f.readline())
+    difficulty = int(f.readline())
 
 
 class ChessPiece:
-
     # history is used to keep data, so board.unmake_move() works properly.
     eaten_pieces_history = []
     has_moved_history = []
@@ -51,7 +56,7 @@ class ChessPiece:
         self.x = position_x
         self.moved = self.has_moved_history.pop()
 
-    def get_score(self):
+    def get_score(self, board):
         return 0
 
     def __repr__(self):
@@ -59,6 +64,7 @@ class ChessPiece:
 
 
 class Pawn(ChessPiece):
+    capturable = False
 
     def get_moves(self, board):
         moves = []
@@ -76,14 +82,27 @@ class Pawn(ChessPiece):
                 moves.append((x, self.y - 1))
         if board.is_valid_move(self.x + direction, self.y + 1):
             if board.has_opponent(self, x, self.y + 1):
+                self.capturable = True
                 moves.append((x, self.y + 1))
         return moves
 
-    def get_score(self):
-        return 10
+    def get_score(self, board):
+        if difficulty == 3 or difficulty == 2:
+            return 10
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 10
+        
+        positional_value = SCALE_FACTOR * PAWN_POSITIONAL_VALUES[x][y]
+        positional_value += 10 if self.capturable else 0
+        return material_value + positional_value
 
 
 class Knight(ChessPiece):
+    capturable = False
 
     def get_moves(self, board):
         moves = []
@@ -97,13 +116,26 @@ class Knight(ChessPiece):
             y = comb[0][1](self.y, comb[1][1])
             if board.has_empty_block(x, y) or board.has_opponent(self, x, y):
                 moves.append((x, y))
+                if board.has_opponent(self, x, y):
+                    self.capturable = True
         return moves
 
-    def get_score(self):
-        return 20
+    def get_score(self, board):
+        if difficulty == 3 or difficulty == 2:
+            return 30
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 30
+        positional_value = SCALE_FACTOR * KNIGHT_POSITIONAL_VALUES[x][y]
+        positional_value += 10 if self.capturable else 0
+        return material_value + positional_value
 
 
 class Bishop(ChessPiece):
+    capturable = False
 
     def get_moves(self, board):
         moves = []
@@ -119,15 +151,28 @@ class Bishop(ChessPiece):
                 if board.has_empty_block(x, y):
                     moves.append((x, y))
                 if board.has_opponent(self, x, y):
+                    self.capturable = True
                     moves.append((x, y))
                     break
         return moves
 
-    def get_score(self):
-        return 30
+    def get_score(self, board):
+        if difficulty == 3 or difficulty == 2:
+            return 30
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 30
+        positional_value = SCALE_FACTOR * BISHOP_POSITIONAL_VALUES[x][y]
+        positional_value += 10 if self.capturable else 0
+        return material_value + positional_value
 
 
 class Rook(ChessPiece):
+    capturable_1 = False
+    capturable_2 = False
 
     def get_moves(self, board):
         moves = []
@@ -145,6 +190,8 @@ class Rook(ChessPiece):
                 if board.has_empty_block(x, self.y):
                     moves.append((x, self.y))
                 if board.has_opponent(self, x, self.y):
+
+                    self.capturable_1 = True
                     moves.append((x, self.y))
                     break
         return moves
@@ -160,11 +207,23 @@ class Rook(ChessPiece):
                     moves.append((self.x, y))
                 if board.has_opponent(self, self.x, y):
                     moves.append((self.x, y))
+                    self.capturable_2 = True
                     break
         return moves
 
-    def get_score(self):
-        return 30
+    def get_score(self, board):
+        if difficulty == 3 or difficulty == 2:
+            return 50
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 50
+        positional_value = SCALE_FACTOR * ROOK_POSITIONAL_VALUES[x][y]
+        positional_value += 10 if self.capturable_1 else 0
+        positional_value += 10 if self.capturable_2 else 0
+        return material_value + positional_value
 
 
 class Queen(ChessPiece):
@@ -181,11 +240,21 @@ class Queen(ChessPiece):
             moves.extend(bishop_moves)
         return moves
 
-    def get_score(self):
-        return 240
+    def get_score(self, board):
+        if difficulty == 3 or difficulty == 2:
+            return 90
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 90
+        positional_value = SCALE_FACTOR * QUEEN_POSITIONAL_VALUES[x][y]
+        return material_value + positional_value
 
 
 class King(ChessPiece):
+    #capturable = False
 
     def get_moves(self, board):
         moves = []
@@ -203,6 +272,7 @@ class King(ChessPiece):
                 moves.append((x, self.y+1))
             if board.has_empty_block(x, self.y - 1) or board.has_opponent(self, x, self.y - 1):
                 moves.append((x, self.y - 1))
+            
         return moves
 
     def get_horizontal_moves(self, board):
@@ -212,6 +282,56 @@ class King(ChessPiece):
             if board.has_empty_block(self.x, y) or board.has_opponent(self, self.x, y):
                 moves.append((self.x, y))
         return moves
+    
+    def get_king_safety_value(self, board):
+        x = self.x
+        y = self.y
+        # Calculate the safety value based on the pieces surrounding the king
+        adjacent_positions = set([
+            (x + i, y + j)
+            for i in [-1, 0, 1] for j in [-1, 0, 1]
+            if 0 <= x + i < 8 and 0 <= y + j < 8 and not (i == 0 and j == 0)
+            # Ensure valid board position and exclude the king's position
+        ])
 
-    def get_score(self):
-        return 1000
+        friendlies_around = 0
+        enemies_around = 0
+
+        if self.color == "white":
+            friendlies = board.whites
+            enemies = board.blacks
+        else:
+            friendlies = board.blacks
+            enemies = board.whites
+
+        for piece in friendlies:
+            if (piece.x, piece.y) in adjacent_positions:
+                friendlies_around += 1
+
+        for piece in enemies:
+            if (piece.x, piece.y) in adjacent_positions:
+                enemies_around += 1
+
+        # Here, we're using simple illustrative values:
+        # A bonus of 1 for each friendly piece and a penalty of 5 for each opponent piece.
+        # These values can be fine-tuned.
+        king_safety_value = friendlies_around * 0.5 - enemies_around * 1
+
+        return king_safety_value
+
+    def get_score(self, board):
+        
+        x = self.x
+        y = self.y
+        if self.color == "black":
+            x, y = 7 - x, 7 - y  # Mirror the coordinates
+
+        material_value = 1000
+        positional_value = SCALE_FACTOR * KING_POSITIONAL_VALUES[x][y]
+
+
+        # get king safety value
+        king_safety = self.get_king_safety_value(board)
+        if difficulty == 3 or difficulty == 2:
+            return 1000
+        return material_value + positional_value + king_safety

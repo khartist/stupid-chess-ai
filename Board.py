@@ -7,18 +7,24 @@ class Board:
     whites = []
     blacks = []
 
-    def __init__(self, game_mode, ai=False, depth=2, log=False):    # game_mode == 0 : whites down/blacks up
+    def __init__(self, game_mode, ai=False, depth=2, log=False, player = 'white'):    # game_mode == 0 : whites down/blacks up
         self.board = []
         self.game_mode = game_mode
         self.depth = depth
         self.ai = ai
         self.log = log
+        self.player = 'white' if game_mode == 0 else 'black'
+        self.number_of_turn = 0
+
+    def get_number_of_turn(self):
+        return self.number_of_turn
 
     def initialize_board(self):
         for i in range(8):
             self.board.append(['empty-block' for _ in range(8)])
 
     def place_pieces(self):
+        from ChessPiece import King, Pawn, Rook, Bishop, Knight, Queen
         self.board.clear()
         self.whites.clear()
         self.blacks.clear()
@@ -51,6 +57,7 @@ class Board:
             self.reverse()
 
     def save_pieces(self):
+        from ChessPiece import ChessPiece
         for i in range(8):
             for j in range(8):
                 if isinstance(self[i][j], ChessPiece):
@@ -59,7 +66,9 @@ class Board:
                     else:
                         self.blacks.append(self[i][j])
 
-    def make_move(self, piece, x, y, keep_history=False):    # history is logged when ai searches for moves
+    def make_move(self, piece, x, y, keep_history=False):
+        from ChessPiece import ChessPiece    
+        # history is logged when ai searches for moves
         old_x = piece.x
         old_y = piece.y
         if keep_history:
@@ -96,6 +105,7 @@ class Board:
         return self.board[item]
 
     def has_opponent(self, piece, x, y):
+        from ChessPiece import ChessPiece
         if not self.is_valid_move(x, y):
             return False
         if isinstance(self.board[x][y], ChessPiece):
@@ -103,6 +113,7 @@ class Board:
         return False
 
     def has_friend(self, piece, x, y):
+        from ChessPiece import ChessPiece
         if not self.is_valid_move(x, y):
             return False
         if isinstance(self[x][y], ChessPiece):
@@ -114,14 +125,16 @@ class Board:
         return 0 <= x < 8 and 0 <= y < 8
 
     def has_empty_block(self, x, y):
+        from ChessPiece import ChessPiece
         if not self.is_valid_move(x, y):
             return False
         return not isinstance(self[x][y], ChessPiece)
 
     def get_player_color(self):
-        if self.game_mode == 0:
+        return self.player
+        '''if self.game_mode == 0:
             return 'white'
-        return 'black'
+        return 'black'''
 
     def king_is_threatened(self, color, move=None):
         if color == 'white':
@@ -155,16 +168,25 @@ class Board:
         return False
 
     def white_won(self):
+        black_pieces = len(self.blacks)
+        if black_pieces == 1:
+            return True
+        return False
         if self.king_is_threatened('black') and not self.has_moves('black'):
             return True
         return False
 
     def black_won(self):
+        white_pieces = len(self.whites)
+        if white_pieces == 1:
+            return True
+        return False
         if self.king_is_threatened('white') and not self.has_moves('white'):
             return True
         return False
 
     def has_moves(self, color):
+        from ChessPiece import ChessPiece
         total_moves = 0
         for i in range(8):
             for j in range(8):
@@ -221,6 +243,7 @@ class Board:
                 return True
 
     def evaluate(self):
+        from ChessPiece import ChessPiece
         white_points = 0
         black_points = 0
         for i in range(8):
@@ -228,9 +251,9 @@ class Board:
                 if isinstance(self[i][j], ChessPiece):
                     piece = self[i][j]
                     if piece.color == 'white':
-                        white_points += piece.get_score()
+                        white_points += piece.get_score(self)
                     else:
-                        black_points += piece.get_score()
+                        black_points += piece.get_score(self)
         if self.game_mode == 0:
             return black_points - white_points
         return white_points - black_points
@@ -242,6 +265,7 @@ class Board:
         return 'Board'
 
     def unicode_array_repr(self):
+        from ChessPiece import ChessPiece
         data = deepcopy(self.board)
         for idx, row in enumerate(self.board):
             for i, p in enumerate(row):
@@ -257,4 +281,7 @@ class Board:
             return self.whiteKing
         return self.blackKing
 
+    def switch_player(self):
+        # Add this method to switch the current player after a move
+        self.player = 'black' if self.player == 'white' else 'white'
 

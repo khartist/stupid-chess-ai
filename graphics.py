@@ -1,6 +1,13 @@
 import pygame
 from ChessPiece import *
-from Computer import get_random_move, get_ai_move
+from Computer import get_random_move, get_ai_move, get_ai_move_lvl1
+import time
+from config import initial
+# other_file.py
+with open('initial.txt', 'r') as f:
+    mode = int(f.readline())
+    difficulty = int(f.readline())
+
 
 dark_block = pygame.image.load('assets/JohnPablok Cburnett Chess set/128px/square brown dark_png_shadow_128px.png')
 light_block = pygame.image.load('assets/JohnPablok Cburnett Chess set/128px/square brown light_png_shadow_128px.png')
@@ -96,58 +103,117 @@ def start(board):
     dimensions = pygame.display.get_surface().get_size()
     game_over = False
     piece = None
-    if board.game_mode == 1 and board.ai:
-        get_ai_move(board)
-        draw_background(board)
-    while running:
-        if game_over:
-            draw_text(game_over_txt)
+    # mode = 1 means player vs bot, mode = 2 means bot vs bot
+    print(mode)
+    if mode == 1:
+        if board.game_mode == 1 and board.ai:
+            get_ai_move(board)
+            draw_background(board)
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            if game_over and event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    return True
-            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
-                x = 7 - pygame.mouse.get_pos()[1] // 75
-                y = pygame.mouse.get_pos()[0] // 75
-                if isinstance(board[x][y], ChessPiece) and (board.get_player_color() == board[x][y].color or not board.ai) and (x, y) not in possible_piece_moves:
-                    piece = board[x][y]
-                    moves = piece.filter_moves(piece.get_moves(board), board)
-                    move_positions = []
-                    possible_piece_moves = []
-                    for move in moves:
-                        move_positions.append((dimensions[0] - (8 - move[1]) * 75, dimensions[1] - move[0] * 75 - 125))
-                        move_x = 7 - move_positions[-1][1] // 75
-                        move_y = move_positions[-1][0] // 75
-                        possible_piece_moves.append((move_x, move_y))
-                    if visible_moves:
-                        draw_background(board)
-                        visible_moves = False
-                    for move in move_positions:
-                        visible_moves = True
-                        screen.blit(highlight_block, (move[0], move[1]))
-                        pygame.display.update()
-                else:
-                    clicked_move = (x, y)
-                    try:
-                        if clicked_move in possible_piece_moves:
-                            board.make_move(piece, x, y)
-                            possible_piece_moves.clear()
+        while running:
+            if game_over:
+                draw_text(game_over_txt)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if game_over and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        return True
+                if event.type == pygame.MOUSEBUTTONDOWN and not game_over:   
+                    x = 7 - pygame.mouse.get_pos()[1] // 75
+                    y = pygame.mouse.get_pos()[0] // 75
+                    if isinstance(board[x][y], ChessPiece) and (board.get_player_color() == board[x][y].color or not board.ai) and (x, y) not in possible_piece_moves:
+                        piece = board[x][y]
+                        moves = piece.filter_moves(piece.get_moves(board), board)
+                        move_positions = []
+                        possible_piece_moves = []
+                        for move in moves:
+                            move_positions.append((dimensions[0] - (8 - move[1]) * 75, dimensions[1] - move[0] * 75 - 125))
+                            move_x = 7 - move_positions[-1][1] // 75
+                            move_y = move_positions[-1][0] // 75
+                            possible_piece_moves.append((move_x, move_y))
+                        if visible_moves:
                             draw_background(board)
-                            if board.ai:
-                                get_ai_move(board)
+                            visible_moves = False
+                        for move in move_positions:
+                            visible_moves = True
+                            screen.blit(highlight_block, (move[0], move[1]))
+                            pygame.display.update()
+                    else:
+                        clicked_move = (x, y)
+                        try:
+                            if clicked_move in possible_piece_moves:
+                                board.make_move(piece, x, y)
+                                possible_piece_moves.clear()
                                 draw_background(board)
-                                    
-                        if board.white_won():
-                            game_over = True
-                            game_over_txt = 'WHITE WINS!'
-                        elif board.black_won():
-                            game_over = True
-                            game_over_txt = 'BLACK WINS!'
-                        elif board.draw():
-                            game_over = True
-                            game_over_txt = 'DRAW!'
-                    except UnboundLocalError:
-                        pass
+                                if board.ai:
+                                    if difficulty == 1:
+                                        get_random_move(board)
+                                    elif difficulty == 2 or difficulty == 3:
+                                        get_ai_move_lvl1(board)
+                                    elif difficulty == 4 or difficulty == 5:
+                                        get_ai_move(board)
+                                    draw_background(board)
+                                        
+                            if board.white_won():
+                                game_over = True
+                                game_over_txt = 'WHITE WINS!'
+                            elif board.black_won():
+                                game_over = True
+                                game_over_txt = 'BLACK WINS!'
+                            elif board.draw():
+                                game_over = True
+                                game_over_txt = 'DRAW!'
+                        except UnboundLocalError:
+                            pass
+
+    else: 
+        while running:
+            if game_over:
+                draw_text(game_over_txt)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                if game_over and event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        return True
+                #if event.type == pygame.MOUSEBUTTONDOWN and not game_over:   
+                if difficulty == 1:
+                    get_random_move(board)
+                elif difficulty == 2 or difficulty == 3:
+                    get_ai_move_lvl1(board)
+                elif difficulty == 4 or difficulty == 5:
+                    get_ai_move(board)
+                
+                draw_background(board)
+                board.switch_player()
+                time.sleep(0.1)
+                
+
+                if board.white_won():
+                    game_over = True
+                    game_over_txt = 'WHITE WINS!'
+                elif board.black_won():
+                    game_over = True
+                    game_over_txt = 'BLACK WINS!'
+                elif board.draw():
+                    game_over = True
+                    game_over_txt = 'DRAW!'
+
+                get_random_move(board)
+                board.switch_player()
+                draw_background(board)
+                time.sleep(0.1)
+
+                if board.white_won():
+                    game_over = True
+                    game_over_txt = 'WHITE WINS!'
+                elif board.black_won():
+                    game_over = True
+                    game_over_txt = 'BLACK WINS!'
+                elif board.draw():
+                    game_over = True
+                    game_over_txt = 'DRAW!'
+                
